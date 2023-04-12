@@ -5,3 +5,11 @@ sdkconfig
 */config.h
 node_modules
 build
+perception/esp32c3-bmp280-amg/config.h
+perception/esp32c3-bmp280-amg/CMakeLists.txt
+perception/esp32c3-bmp280-amg/sdkconfig.ci
+.gitignore
+.gitignore
+perception/esp32c3-bmp280-amg/main/component.mk
+perception/esp32c3-bmp280-amg/main/CMakeLists.txt
+perception/esp32c3-bmp280-amg/sdkconfig.old

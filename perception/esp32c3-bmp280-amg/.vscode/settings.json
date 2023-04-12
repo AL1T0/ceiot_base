@@ -1,0 +1,11 @@
+{
+    "idf.adapterTargetName": "esp32c3",
+    "idf.openOcdConfigs": [
+        "board/esp32c3-bridge.cfg"
+    ],
+    "idf.flashType": "UART",
+    "idf.port": "/dev/ttyUSB0",
+    "files.associations": {
+        "bmp280.h": "c"
+    }
+}
