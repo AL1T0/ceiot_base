@@ -1,13 +1,45 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const {MongoClient} = require("mongodb");
-const PgMem = require("pg-mem");
+/*  This code is a Node.js application that sets up an API server to handle requests related to the collection 
+    and storage of data from IoT sensors. 
+    
+    It uses the Express.js framework to set up an HTTP server that listens to specific routes and returns 
+    responses to incoming requests. 
+    
+    The API server interacts with two databases: a PostgreSQL in-memory database and a MongoDB database.
+    - The PostgreSQL database is used to store information about the IoT devices that are sending measurements. 
+    - The MongoDB database is used to store the actual sensor measurements.
 
-const db = PgMem.newDb();
+    The server has endpoints to handle incoming data from IoT devices, which are sent as POST requests 
+    to the /measurement route. The incoming data is parsed and then inserted into the MongoDB database 
+    with the insertMeasurement function. Similarly, new IoT devices can be added to the PostgreSQL database 
+    with a POST request to the /device route. The server also has an endpoint that returns a list of all 
+    the devices that have sent measurements, which can be accessed with a GET request to the /device route.
 
-const fs = require('fs');
+    Finally, there are several endpoints that return HTML templates to display data from the PostgreSQL database. 
+    For example, a GET request to the /web/device route returns an HTML page with a table listing all the IoT 
+    devices and their associated information. Similarly, a GET request to the /web/device/:id route returns an 
+    HTML page with information about a specific IoT device, and a GET request to the /term/device/:id route 
+    returns the same information in a terminal-friendly format.
+*/
 
-// Measurements database setup and access
+const express = require("express");         /* 'express' is a popular web framework for Node.js used to create 
+                                                server applications */
+const bodyParser = require("body-parser");  /* 'body-parser' is used to parse incoming request bodies in a middleware
+                                                before the handlers, available under the req.body property */
+const {MongoClient} = require("mongodb");   /* 'MongoClient' is a module used to interact with a MongoDB database */
+
+const PgMem = require("pg-mem");            // 'PgMem is an in-memory database for PostgreSQL that can be used for
+const db = PgMem.newDb();                   //  testing and development purposes */
+
+const fs = require('fs');                   // 'fs' is used to read and write files from/to the file system
+
+/* Measurements database setup and access
+- startDatabase() connects to the MongoDB database and sets the database variable to the connected database.
+- getDatabase() returns the connected database variable or calls startDatabase() to connect to the database 
+if database is null.
+- insertMeasurement() inserts a new document into the measurements collection in the database and returns the 
+inserted document's ID.
+- getMeasurements() returns an array of all documents in the measurements collection.
+*/
 
 let database = null;
 const collectionName = "measurements";
@@ -32,7 +64,13 @@ async function getMeasurements() {
     return await database.collection(collectionName).find({}).toArray();	
 }
 
-// API Server
+/* API Server
+- const app = express() creates a new Express application
+- app.use(bodyParser.urlencoded({extended:false})) configures the Express app to use the 
+body-parser middleware to parse URL-encoded request bodies.
+- app.use(express.static('spa/static')) configures the Express app to serve static files 
+from the spa/static directory.
+*/
 
 const app = express();
 
@@ -42,19 +80,25 @@ app.use(express.static('spa/static'));
 
 const PORT = 8080;
 
+// Defines a route that handles HTTP POST requests to /measurement and inserts a new measurement into the MongoDB database.
 app.post('/measurement', function (req, res) {
-    console.log("Data from the device " + req.body.id + "     Temperature: " + req.body.t + " °C      Humidity: " + req.body.h + " %       Pressure: " + req.body.p + " Pa");	
-    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h, p:req.body.p});
-	res.send("Received measurement into " +  insertedId);
+    // get the current date and time
+    const now = new Date(); 
+    const options = { timeZone: 'America/Argentina/Buenos_Aires' };
+    const timestamp = now.toLocaleString('en-US', options); 
+    console.log(timestamp + "       Device ID: " + req.body.id + "     Temperature: " + req.body.t + " °C      Humidity: " + req.body.h + " %       Pressure: " + req.body.p + " Pa");	
+    const {insertedId} = insertMeasurement({d:timestamp, id:req.body.id, t:req.body.t, h:req.body.h, p:req.body.p});
+	res.send("Measurement received and inserted into the DB");
 });
 
+// Defines a route that handles HTTP POST requests to /device and inserts a new device into the in-memory database.
 app.post('/device', function (req, res) {
 	console.log("Registring new device with ID: " + req.body.id + "    Name: " + req.body.n + "     Key: " + req.body.k );
     db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+"', '"+req.body.k+"')");
-	res.send("Ok");
+	res.send("Device registered");
 });
 
-
+// Defines a route that handles HTTP GET requests to /web/device and displays a list of devices in an HTML table.
 app.get('/web/device', function (req, res) {
 	var devices = db.public.many("SELECT * FROM devices").map( function(device) {
 		console.log(device);
@@ -77,6 +121,9 @@ app.get('/web/device', function (req, res) {
  * Canibalized from
  *    https://www.npmjs.com/package/sprightly
  *    https://github.com/obadakhalili/Sprightly/blob/main/index.js
+ *    
+ *    Define a function render() that takes a template and a set of variables 
+ *    and returns a string with the variables replaced in the template.
  */
 function render(template, vars) {
    const regexp = /<<(.*?)>>|\{\{(.*?)\}\}/;
@@ -95,6 +142,7 @@ function render(template, vars) {
    }).join('\n');	
 }
 
+// Define a route that handles HTTP GET requests to /web/device/:id and displays a device's information in an HTML template.
 app.get('/web/device/:id', function (req,res) {
     var template = "<html>"+
                      "<head><title>Sensor {{name}}</title></head>" +
