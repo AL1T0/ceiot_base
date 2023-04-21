@@ -32,7 +32,7 @@
 static const char *TAG = "temp_collector";
 
 // POST message for device measurements
-static char *BODY = "id=%s&t=%0.2f&h=%0.2f&p=%0.2f";
+static char *BODY = "id=%s&k=%s&t=%0.2f&h=%0.2f&p=%0.2f";
 static char *REQUEST_POST = "POST "WEB_PATH" HTTP/1.0\r\n"
     "Host: "API_IP_PORT"\r\n"
     "User-Agent: "USER_AGENT"\r\n"
@@ -68,9 +68,9 @@ static void http_get_task(void *pvParameters)
     char send_buf[256];
 
     // Device
-    char body_dev[64];
-    char recv_buf_dev[64];
-    char send_buf_dev[256];
+    //char body_dev[64];
+    //char recv_buf_dev[64];
+    //char send_buf_dev[256];
     bool send_key = true;
 
     // Initialize the BME280 sensor
@@ -100,17 +100,24 @@ static void http_get_task(void *pvParameters)
             ESP_LOGI(TAG, "Temperature/pressure reading failed\n");
 
         } else {
-            ESP_LOGI(TAG, "Temperature: %.2f C", temperature);
-            ESP_LOGI(TAG, "Pressure: %.2f Pa", pressure);
-            if (bme280p) {
-                ESP_LOGI(TAG,"Humidity: %.2f\n", humidity);
-		        sprintf(body, BODY, DEVICE_ID, temperature , humidity, pressure);
-                sprintf(send_buf, REQUEST_POST, (int)strlen(body),body );
-	        } else {
-                sprintf(send_buf, REQUEST_POST, DEVICE_ID, temperature, 0, pressure);
-            }
-	        ESP_LOGI(TAG,"sending: \n%s\n",send_buf);
-        }    
+            // Send device registration data first
+            if (send_key) { 
+                sprintf(body, BODY_DEV, DEVICE_ID, USER_AGENT, mac_str);
+                sprintf(send_buf, REQUEST_POST_DEV, (int)strlen(body),body );
+                send_key = false;
+            } else { // Send measurements
+                ESP_LOGI(TAG, "Temperature: %.2f C", temperature);
+                ESP_LOGI(TAG, "Pressure: %.2f Pa", pressure);
+                if (bme280p) {
+                    ESP_LOGI(TAG,"Humidity: %.2f\n", humidity);
+                    sprintf(body, BODY, DEVICE_ID, mac_str, temperature , humidity, pressure);
+                    sprintf(send_buf, REQUEST_POST, (int)strlen(body),body );
+                } else {
+                    sprintf(send_buf, REQUEST_POST, DEVICE_ID, mac_str, temperature, 0, pressure);
+                }
+            }    
+            ESP_LOGI(TAG,"sending: \n%s\n",send_buf);
+        }
 
         int err = getaddrinfo(API_IP, API_PORT, &hints, &res);
 
@@ -144,51 +151,8 @@ static void http_get_task(void *pvParameters)
 
         ESP_LOGI(TAG, "... connected");
         freeaddrinfo(res);
-        
-        // Send device registration data
-        if (send_key) { 
-            sprintf(body_dev, BODY_DEV, DEVICE_ID, USER_AGENT, mac_str);
-            sprintf(send_buf_dev, REQUEST_POST_DEV, (int)strlen(body_dev),body_dev );
 
-	        ESP_LOGI(TAG,"sending: \n%s\n",send_buf_dev);
-            
-            if (write(s, send_buf_dev, strlen(send_buf_dev)) < 0) {
-                ESP_LOGE(TAG, "... socket send failed");
-                close(s);
-                vTaskDelay(4000 / portTICK_PERIOD_MS);
-                continue;
-            }
-            ESP_LOGI(TAG, "... socket send success");
-
-            struct timeval receiving_timeout_dev;
-            receiving_timeout_dev.tv_sec = 5;
-            receiving_timeout_dev.tv_usec = 0;
-            if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout_dev,
-                    sizeof(receiving_timeout_dev)) < 0) {
-                ESP_LOGE(TAG, "... failed to set socket receiving timeout");
-                close(s);
-                vTaskDelay(4000 / portTICK_PERIOD_MS);
-                continue;
-            }
-            ESP_LOGI(TAG, "... set socket receiving timeout success");
-
-            // Read HTTP response
-            do {
-                bzero(recv_buf_dev, sizeof(recv_buf_dev));
-                r = read(s, recv_buf_dev, sizeof(recv_buf_dev)-1);
-                for(int i = 0; i < r; i++) {
-                    putchar(recv_buf_dev[i]);
-                }
-            } while(r > 0);
-            
-            // Disable device registration
-            send_key = false;
-
-            ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d.", r, errno);
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
-        }
-
-        // Send measurements
+        // Send data
         if (write(s, send_buf, strlen(send_buf)) < 0) {
             ESP_LOGE(TAG, "... socket send failed");
             close(s);
@@ -209,14 +173,30 @@ static void http_get_task(void *pvParameters)
         }
         ESP_LOGI(TAG, "... set socket receiving timeout success");
 
-        // Read HTTP response
+        // Read HTTP response and put it to a string
+        char response_str[1024];
+        int response_len = 0;
         do {
             bzero(recv_buf, sizeof(recv_buf));
             r = read(s, recv_buf, sizeof(recv_buf)-1);
             for(int i = 0; i < r; i++) {
                 putchar(recv_buf[i]);
+                response_str[response_len++] = recv_buf[i];
+                //printf("%d",i);
             }
         } while(r > 0);
+        // Null-terminate the string
+        response_str[response_len] = '\0';
+
+        //for(int i = 0; i < 201; i++) {
+        //        printf("%c",response_str[i]);
+        //}
+        ESP_LOGI(TAG, "Response: %c", response_str[199]);
+
+        if (response_str[199]=='N'){
+            ESP_LOGI(TAG, "Response: %s", response_str);
+            send_key = true;
+        }
 
         ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d.", r, errno);
         close(s);

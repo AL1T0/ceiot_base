@@ -87,15 +87,29 @@ app.post('/measurement', function (req, res) {
     const options = { timeZone: 'America/Argentina/Buenos_Aires' };
     const timestamp = now.toLocaleString('en-US', options); 
     console.log(timestamp + "       Device ID: " + req.body.id + "     Temperature: " + req.body.t + " °C      Humidity: " + req.body.h + " %       Pressure: " + req.body.p + " Pa");	
-    const {insertedId} = insertMeasurement({d:timestamp, id:req.body.id, t:req.body.t, h:req.body.h, p:req.body.p});
-	res.send("Measurement received and inserted into the DB");
+    
+    // Check if device key is registered in the database
+    const deviceKey = req.body.k;
+    var devkey = db.public.many("SELECT * FROM devices WHERE key = '"+ deviceKey +"'");
+    //console.log(devkey);
+
+    if (devkey == "") {
+        console.error('Device key not registered:', deviceKey);
+        res.send('Not registered\n');
+        return;
+    }
+
+    // Device key is registered, insert measurement into database
+    const {insertedId} = insertMeasurement({d:timestamp, id:req.body.id, k:req.body.k, t:req.body.t, h:req.body.h, p:req.body.p});
+	res.send("Measurement received and inserted into the DB\n");
+    //});
 });
 
 // Defines a route that handles HTTP POST requests to /device and inserts a new device into the in-memory database.
 app.post('/device', function (req, res) {
 	console.log("Registring new device with ID: " + req.body.id + "    Name: " + req.body.n + "     Key: " + req.body.k );
     db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+"', '"+req.body.k+"')");
-	res.send("Device registered");
+	res.send("Device registered\n");
 });
 
 // Defines a route that handles HTTP GET requests to /web/device and displays a list of devices in an HTML table.
