@@ -43,16 +43,15 @@ app.use(express.static('spa/static'));
 const PORT = 8080;
 
 app.post('/measurement', function (req, res) {
--       console.log("device id    : " + req.body.id + " key         : " + req.body.key + " temperature : " + req.body.t + " humidity    : " + req.body.h);	
-    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h});
-	res.send("received measurement into " +  insertedId);
+    console.log("Data from the device " + req.body.id + "     Temperature: " + req.body.t + " °C      Humidity: " + req.body.h + " %       Pressure: " + req.body.p + " Pa");	
+    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h, p:req.body.p});
+	res.send("Received measurement into " +  insertedId);
 });
 
 app.post('/device', function (req, res) {
-	console.log("device id    : " + req.body.id + " name        : " + req.body.n + " key         : " + req.body.k );
-
+	console.log("Registring new device with ID: " + req.body.id + "    Name: " + req.body.n + "     Key: " + req.body.k );
     db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+"', '"+req.body.k+"')");
-	res.send("received new device");
+	res.send("Ok");
 });
 
 
@@ -178,18 +177,18 @@ app.get('/admin/:command', function(req,res) {
 
 
 startDatabase().then(async() => {
-    await insertMeasurement({id:'00', t:'18', h:'78'});
-    await insertMeasurement({id:'00', t:'19', h:'77'});
-    await insertMeasurement({id:'00', t:'17', h:'77'});
-    await insertMeasurement({id:'01', t:'17', h:'77'});
+    //await insertMeasurement({id:'00', t:'18', h:'78'});
+    //await insertMeasurement({id:'00', t:'19', h:'77'});
+    //await insertMeasurement({id:'00', t:'17', h:'77'});
+    //await insertMeasurement({id:'01', t:'17', h:'77'});
     console.log("mongo measurement database Up");
 
     db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR)");
-    db.public.none("INSERT INTO devices VALUES ('00', 'Fake Device 00', '123456')");
-    db.public.none("INSERT INTO devices VALUES ('01', 'Fake Device 01', '234567')");
+    //db.public.none("INSERT INTO devices VALUES ('00', 'Fake Device 00', '123456')");
+    //db.public.none("INSERT INTO devices VALUES ('01', 'Fake Device 01', '234567')");
     db.public.none("CREATE TABLE users (user_id VARCHAR, name VARCHAR, key VARCHAR)");
-    db.public.none("INSERT INTO users VALUES ('1','Ana','admin123')");
-    db.public.none("INSERT INTO users VALUES ('2','Beto','user123')");
+    //db.public.none("INSERT INTO users VALUES ('1','Ana','admin123')");
+    //db.public.none("INSERT INTO users VALUES ('2','Beto','user123')");
 
     console.log("sql device database up");
 
