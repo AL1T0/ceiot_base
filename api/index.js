@@ -1,45 +1,13 @@
-/*  This code is a Node.js application that sets up an API server to handle requests related to the collection 
-    and storage of data from IoT sensors. 
-    
-    It uses the Express.js framework to set up an HTTP server that listens to specific routes and returns 
-    responses to incoming requests. 
-    
-    The API server interacts with two databases: a PostgreSQL in-memory database and a MongoDB database.
-    - The PostgreSQL database is used to store information about the IoT devices that are sending measurements. 
-    - The MongoDB database is used to store the actual sensor measurements.
+const express = require("express");
+const bodyParser = require("body-parser");
+const {MongoClient} = require("mongodb");
+const PgMem = require("pg-mem");
 
-    The server has endpoints to handle incoming data from IoT devices, which are sent as POST requests 
-    to the /measurement route. The incoming data is parsed and then inserted into the MongoDB database 
-    with the insertMeasurement function. Similarly, new IoT devices can be added to the PostgreSQL database 
-    with a POST request to the /device route. The server also has an endpoint that returns a list of all 
-    the devices that have sent measurements, which can be accessed with a GET request to the /device route.
+const db = PgMem.newDb();
 
-    Finally, there are several endpoints that return HTML templates to display data from the PostgreSQL database. 
-    For example, a GET request to the /web/device route returns an HTML page with a table listing all the IoT 
-    devices and their associated information. Similarly, a GET request to the /web/device/:id route returns an 
-    HTML page with information about a specific IoT device, and a GET request to the /term/device/:id route 
-    returns the same information in a terminal-friendly format.
-*/
+const fs = require('fs');
 
-const express = require("express");         /* 'express' is a popular web framework for Node.js used to create 
-                                                server applications */
-const bodyParser = require("body-parser");  /* 'body-parser' is used to parse incoming request bodies in a middleware
-                                                before the handlers, available under the req.body property */
-const {MongoClient} = require("mongodb");   /* 'MongoClient' is a module used to interact with a MongoDB database */
-
-const PgMem = require("pg-mem");            // 'PgMem is an in-memory database for PostgreSQL that can be used for
-const db = PgMem.newDb();                   //  testing and development purposes */
-
-const fs = require('fs');                   // 'fs' is used to read and write files from/to the file system
-
-/* Measurements database setup and access
-- startDatabase() connects to the MongoDB database and sets the database variable to the connected database.
-- getDatabase() returns the connected database variable or calls startDatabase() to connect to the database 
-if database is null.
-- insertMeasurement() inserts a new document into the measurements collection in the database and returns the 
-inserted document's ID.
-- getMeasurements() returns an array of all documents in the measurements collection.
-*/
+// Measurements database setup and access
 
 let database = null;
 const collectionName = "measurements";
@@ -135,9 +103,6 @@ app.get('/web/device', function (req, res) {
  * Canibalized from
  *    https://www.npmjs.com/package/sprightly
  *    https://github.com/obadakhalili/Sprightly/blob/main/index.js
- *    
- *    Define a function render() that takes a template and a set of variables 
- *    and returns a string with the variables replaced in the template.
  */
 function render(template, vars) {
    const regexp = /<<(.*?)>>|\{\{(.*?)\}\}/;
@@ -195,54 +160,11 @@ app.get('/device', function(req,res) {
     res.send( db.public.many("SELECT * FROM devices") );
 });
 
-app.get('/admin/:command', function(req,res) {
-    var msg="done";
-    switch (req.params.command) {
-       case "clear":
-         if (req.query.db == "mongo") {
-           msg = "clearing mongo";
-           /* UNIMPLEMENTED */
-	 } else if (req.query.db == "psql") {
-           msg = "clearing psql";
-           /* UNIMPLEMENTED */
-	 } else {
-           msg = "unknown db " + req.query.db;
-         }
-       break;
-       case "save":
-         if (req.query.db == "mongo") {
-           msg = "saving mongo to " + req.query.file;
-           /* UNIMPLEMENTED */
-	 } else if (req.query.db == "psql") {
-           msg = "saving psql " + req.query.file;
-           /* UNIMPLEMENTED */
-	 } else {
-           msg = "unknown db " + req.query.db;
-         }
-       break;
-       case "show":
-         msg = fs.readFileSync("../fixtures/" + req.query.file);
-       break;
- 
-       break;
-       default:
-         msg="Command: " + req.params.command + " not implemented"
-    }
-    var template = "<html>"+
-                     "<head><title>Admin</title></head>" +
-                     "<body>" +
-                        "{{ msg }}"+
-                     "</body>" +
-                "</html>";
-    res.send(render(template,{msg:msg}));
-});	
-
-
 startDatabase().then(async() => {
-    //await insertMeasurement({id:'00', t:'18', h:'78'});
-    //await insertMeasurement({id:'00', t:'19', h:'77'});
-    //await insertMeasurement({id:'00', t:'17', h:'77'});
-    //await insertMeasurement({id:'01', t:'17', h:'77'});
+    await insertMeasurement({id:'00', t:'18', h:'78'});
+    await insertMeasurement({id:'00', t:'19', h:'77'});
+    await insertMeasurement({id:'00', t:'17', h:'77'});
+    await insertMeasurement({id:'01', t:'17', h:'77'});
     console.log("mongo measurement database Up");
 
     db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR)");

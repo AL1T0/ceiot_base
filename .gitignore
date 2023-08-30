@@ -2,7 +2,6 @@
 */*.old
 *.swp
 sdkconfig
-*/config.h
 node_modules
 build
 perception/esp32c3-bmp280-amg/config.h
