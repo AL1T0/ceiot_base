@@ -1,4 +1,4 @@
-# Ejercicio CiberKillChain - Ataque
+# Ejercicio CyberKillChain - Ataque
 Se realizó una copia del documento original utilizándolo como plantilla para la realización del ejercicio.
 
 ## Alumno
