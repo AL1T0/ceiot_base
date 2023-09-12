@@ -35,7 +35,7 @@ PURO ATAQUE, nada de andar pensando cómo corregir nada.
 Para cada etapa, si hay varias medidas posibles, ordenar dejando para lo último lo que se va a hacer en el siguiente paso.
 
 ### Cyberkillchain
-Objetivo del ataque: obtener acceso y control sobre el sistema de monitoreo para robar información sobre la captura de CO2 y sabotear el funcionamiento del sistema, interrumpiendo el proceso de captura de CO2.
+Objetivo del ataque: obtener información altamente confidencial relacionada con el sistema de monitoreo de Green Backbone. Este sistema es crítico para el seguimiento y la validación de los bonos de CO2 generados por el proyecto Green Backbone. La obtención de esta información permitirá el acceso a valiosos datos sobre la captura de CO2, que es esencial para el éxito y la rentabilidad del proyecto. Además, el sabotaje del funcionamiento del equipo podría resultar en la pérdida de bonos de CO2 y afectar significativamente la posición de GB en el mercado de comercio de carbono. Por lo tanto, el ataque tiene como objetivo no solo la obtención de datos sino también el potencial sabotaje del proyecto y la interrupción de los ingresos asociados a los bonos de CO2.
 
 #### Etapa 1: reconnaissance
 - Identifico el objetivo como el sistema de monitoreo.
