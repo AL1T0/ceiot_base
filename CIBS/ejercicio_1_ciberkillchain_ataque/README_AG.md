@@ -76,7 +76,5 @@ Objetivo del ataque: obtener información altamente confidencial relacionada con
   
 #### Etapa 7: actions on objectives
 - Ejecuto sabotaje manteniendo apagada la unidad para que no procese el aire del ambiente, mientras altero las métricas del sistema.
-  - T1005 - Data from Local System (datos desde el sistema local): recopilación de datos sensibles.
   - T1491 - Defacement (desfiguración): modificación de valores de medición de CO2 y comando del equipo.
   - T1641 - Data Manipulation (manipulación de datos): cambio de datos históricos.
-  - T1027 - Obfuscated Files or Information (archivos o información alterada).
